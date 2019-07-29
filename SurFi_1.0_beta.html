@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border:1px solid #000000;
+    /* background-color: #c1ecec;  */
+    background:url("wave_background2.jpg") 
+    
+    /* ("wave_background.jpg") */
+}
+</style>
+</head>
+<body onload="startGame()">
+        <script>
+            
+            var myGamePiece;
+            var myObstacles = [];
+            var myScore;
+            
+            function startGame() {
+                myGamePiece = new component(108, 117, "fi_surf.png", 150, 120, "image");
+                myGamePiece.gravity = 0.02;
+                myScore = new component("35px", "Consolas", "black", 640, 50, "text");
+                myGameArea.start();
+            }
+            
+            var myGameArea = {
+                canvas : document.createElement("canvas"),
+                start : function() {
+                    this.canvas.width = 850;
+                    this.canvas.height = 422;
+                    this.context = this.canvas.getContext("2d");
+                    document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                    this.frameNo = 0;
+                    this.interval = setInterval(updateGameArea, 20);
+                    /*single button press controlls*/
+                    window.addEventListener('keydown', function (e) {
+                        myGameArea.key = e.keyCode;
+                    })
+                    window.addEventListener('keyup', function (e) {
+                        myGameArea.key = false;
+                    })
+
+        },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+
+function component(width, height, color, x, y, type) {
+    this.type = type;
+    if (type == "image") {
+    this.image = new Image();
+    this.image.src = color;
+    }
+    this.score = 0;
+    this.width = width;
+    this.height = height;
+    this.moveAngle=1;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;
+    this.gravity = 0.02;
+    this.gravitySpeed = 0;
+    this.update = function() {
+        ctx = myGameArea.context;
+        if (this.type == "text") {
+            ctx.font = this.width + " " + this.height;
+            ctx.fillStyle = color;
+            ctx.fillText(this.text, this.x, this.y);
+        } else {
+            // Need to combine and nest
+        }
+        if (type == "image") {
+        ctx.drawImage(this.image, 
+        this.x, 
+        this.y,
+        this.width, this.height);
+        } else {
+
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+}
+    this.newPos = function() {
+        this.gravitySpeed += this.gravity;
+        this.x += this.speedX;
+        this.y += this.speedY + this.gravitySpeed;
+        this.hitBottom();
+    }
+    
+    this.hitBottom = function() {
+        var rockbottom = myGameArea.canvas.height - this.height;
+        if (this.y > rockbottom) {
+            this.y = rockbottom;
+            this.gravitySpeed = 0;
+        }
+        
+    }
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom-8 < othertop) || (mytop+18 > otherbottom) || (myright-15 < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+}
+
+function updateGameArea() {
+    var x, height, gap, minHeight, maxHeight, minGap, maxGap;
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {
+            return;
+        } 
+    }
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+    
+    // Random barrier gates
+    
+    if (myGameArea.frameNo == 100 || everyinterval(100)) {
+        x = myGameArea.canvas.width;
+        minHeight = 20;
+        maxHeight = 100;
+        height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+        minGap = 180;
+        maxGap = 200;
+        gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
+        myObstacles.push(new component(10, height, "#a53de0", x, 0));
+        myObstacles.push(new component(10, x - height - gap, "#a53de0", x, height + gap));
+    }
+    for (i = 0; i < myObstacles.length; i += 1) {
+        myObstacles[i].x += -10.5;
+        myObstacles[i].update();
+    }
+    
+
+    /*Random size fences
+
+    if (myGameArea.frameNo == 100 || everyinterval(100)) {
+        x = myGameArea.canvas.width;
+        minHeight = 0;
+        maxHeight = 0;
+        height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+        minGap = 100;
+        maxGap = 200;
+        gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
+        myObstacles.push(new component(10, height, "green", x, 0));
+        myObstacles.push(new component(10, x - height - gap, "green", x, height + gap));
+    }
+    for (i = 0; i < myObstacles.length; i += 1) {
+        myObstacles[i].x += -4;
+        myObstacles[i].update();
+    }
+    */
+    
+    if (myGameArea.key && myGameArea.key == 38) {myGamePiece.gravitySpeed=-2.7; }
+    if (myGameArea.key && myGameArea.key == 40) {myGamePiece.gravitySpeed = 4.0; }
+
+    // Space bar controls:
+    if (myGameArea.key && myGameArea.key == 32) {myGamePiece.gravitySpeed=-1.1; }
+
+    myScore.text="SCORE: " + myGameArea.frameNo; 
+    myScore.update();
+    myGamePiece.newPos();
+    myGamePiece.update();
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+
+// Wave Background
+
+
+
+
+</script>
+<br>
+
+<!-- <button onmousedown="accelerate(-0.2)" onmouseup="accelerate(0.05)">CARVE</button> -->
+
+
+
+
+<p>Welcome to SurFi!</p>
+<b>Instructions</b>
+<!-- <p>If there's one thing Fiona loves more than being woken up for some hot midnight sex, its carving up a gnarly wave.</p> -->
+<p>Use the Up/Down arrow keys to keep Fiona riding and achieve a highscore...</p>
+</body>
+</html>
+
